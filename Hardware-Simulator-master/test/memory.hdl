@@ -1,0 +1,11 @@
+CHIP memory {
+    IN inh[16],inl[16], w, a[9];
+    OUT outh[16],outl[16];
+
+    PARTS:
+
+        RAM512(in=inh,load=w,address=a,out=outh);
+        RAM512(in=inl,load=w,address=a,out=outl);
+
+
+}
