@@ -39,5 +39,50 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
+    //判断是A指令还是C指令
+    Not(in = instruction[15], out = AI);
+    And(a = instruction[15], b = true, out = CI);
+
+    //从D寄存器获取值outDR
+    And(a = CI, b = instruction[4], out = loadD);
+    DRegister(in = outALU, load = loadD, out = outDR);
+
+    //1、如果是A指令，加载instruction到A寄存器；2、如果是C指令，获取值outAR
+    And(a = CI, b = instruction[5], out = CLoadA);
+    Or(a = AI, b = CLoadA, out = loadA);
+    Mux16(a = outALU, b = instruction, sel = AI, out = inALU);
+    ARegister(in = inALU, load = loadA, out = outAR, out[0..14] = addressM);
+
+    //选择A寄存器的值或RAM[M]的是到ALU
+    Mux16(a = outAR, b = inM, sel = instruction[12], out = outMAR);
+
+    And(a = CI, b = instruction[11], out = zx);
+    And(a = CI, b = instruction[10], out = nx);
+    And(a = CI, b = instruction[9], out = zy);
+    And(a = CI, b = instruction[8], out = ny);
+    And(a = CI, b = instruction[7], out = f);
+    And(a = CI, b = instruction[6], out = no);
+
+    ALU(x = outDR, y = outMAR, zx = zx, nx = nx, zy = zy, ny = ny, f = f, no = no, out = outALU, out = outM, zr = zr, ng = ng);
+
+    //是否将结果写回RAM[M]
+    And(a = CI, b = instruction[3], out = writeM);
+
+    //判断跳转位
+    And(a = CI, b = instruction[0], out = GT);
+    And(a = CI, b = instruction[1], out = EQ);
+    And(a = CI, b = instruction[2], out = LT);
+
+    And(a = ng, b = LT, out = LTJump);
+    And(a = zr, b = EQ, out = EQJump);
+
+    Or(a = ng, b = zr, out = isPo);
+    Not(in = isPo, out = po);
+    And(a = po, b = GT, out = GTJump);
+
+    Or(a = LTJump, b = EQJump, out = j1);
+    Or(a = j1, b = GTJump, out = jump);
+
+    PC(in = outAR, load = jump, inc = true, reset = reset, out[0..14] = pc);
+    
 }
